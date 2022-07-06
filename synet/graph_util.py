@@ -9,8 +9,8 @@ import random
 
 from collections import namedtuple
 
-from common import VERTEX_TYPE, PEER_TYPE, EDGE_TYPE, ANNOUNCEMENT_EDGE
-from common import NODE_TYPE, INTERNAL_EDGE
+from .common import VERTEX_TYPE, PEER_TYPE, EDGE_TYPE, ANNOUNCEMENT_EDGE
+from .common import NODE_TYPE, INTERNAL_EDGE
 
 
 
@@ -226,7 +226,7 @@ def add_bgp_announces(g, node, name, net=None, tags=[]):
         announces[name]['net'] = net
 
 def add_bgp_announces_tag(g, node, name, tag):
-    print "ADDED tag", name, tag
+    print ("ADDED tag", name, tag)
     add_bgp_announces(g, node, name)
     announces = get_bgp_announces(g, node)
     announces[name]['tags'].append(tag)

@@ -103,14 +103,14 @@ class Synthesizer(object):
                     continue
                 solver.append(constraint)
             # Load fixed input by the user
-            print "Loading user provided input for box:", box_name
+            print ("Loading user provided input for box:", box_name)
             solver.append(self.boxes[box_name]['fixed_inputs'])
-            print "Loading user provided outputs for box:", box_name
+            print ("Loading user provided outputs for box:", box_name)
             for constraint in self.boxes[box_name]['inputs']:
                 if constraint in self.fixed_inputs:
                     solver.append(self.fixed_inputs[constraint])
             solver.append(self.boxes[box_name]['fixed_outputs'])
-        print ''
+        print ('')
 
     def evaluate_function(self, func, model):
         """
@@ -252,13 +252,13 @@ class Synthesizer(object):
         return vals
 
     def print_box_results(self, box_name):
-        print "For box", box_name
+        print ("For box", box_name)
         model = self.boxes[box_name]['solver'].model()
         for name, func in self.boxes[box_name]['inputs'].iteritems():
             vals = self._get_function_vals(func, model)
             filterd_val = [val[:-1] if z3.is_expr(val[-1]) else val for val in
                            vals]
-            print "\tSynthesized input", name, filterd_val
+            print ("\tSynthesized input", name, filterd_val)
             if name == 'SetOSPFEdgeCost':
                 for val in filterd_val:
                     if isinstance(val, basestring): continue
@@ -275,10 +275,10 @@ class Synthesizer(object):
         for name, func in self.boxes[box_name]['outputs'].iteritems():
             vals = self._get_function_vals(func, model)
             filterd_val = [val[:-1] for val in vals if z3.is_true(val[-1])]
-            print "\tSynthesized output", name, filterd_val
+            print ("\tSynthesized output", name, filterd_val)
 
     def synthesize(self):
-        print "Beginning Synthesis..."
+        print ("Beginning Synthesis...")
         yes_func_vals = {}
         no_box_vals = dict([(box_name, []) for box_name in self.boxes_names])
         box_index = len(self.boxes_names) - 1
@@ -288,7 +288,7 @@ class Synthesizer(object):
             box_tries_count[box_name] += 1
             if box_name == 'ospf01':
                 solver = z3.Solver()
-                print 'partially evaluate the OSPF Datalog rules'
+                print ('partially evaluate the OSPF Datalog rules')
                 translator = Translator(self.boxes[box_name]['file'], 1)
                 ospf_costs = {}
                 DEBUG_OSPF = False
@@ -315,7 +315,7 @@ class Synthesizer(object):
                     cost = str(out[3])
                     ospf_costs[net][src][nxt] = cost
                 ospf_reduced = tempfile.NamedTemporaryFile()
-                print 'Writing OSPF partial evaluation rules to:', ospf_reduced.name
+                print ('Writing OSPF partial evaluation rules to:', ospf_reduced.name)
                 ospf_reduced.write("""
                 // ----------------------------- TYPES ----------------------------- //
                 // Generic Vertex type
@@ -332,7 +332,7 @@ class Synthesizer(object):
                 """)
                 for rule in translator.program.get_rules_for_predicate('OSPFRoute'):
                     if rule.head.name in [l.atom.name for l in rule.get_literals()]:
-                        print rule
+                        print (rule)
                         for net in ospf_costs.keys():
                             for src in ospf_costs[net].keys():
                                 for nxt in ospf_costs[net][src].keys():
@@ -343,26 +343,26 @@ class Synthesizer(object):
                                     if nxt not in ospf_costs[net].keys():
                                         newRule = 'OSPFRoute_{}_{}_{}(cost) <- SetOSPFEdgeCost(src, nxt, cost), src="INTERFACE:{}", nxt="INTERFACE:{}", cost = {}.'.format(
                                             net, src, nxt, src_iface, nxt_iface, ospf_costs[net][src][nxt])
-                                        print newRule
+                                        print (newRule)
                                         ospf_reduced.write(newRule + '\n')
                                         newRule = 'OSPFRoute_{}_{}_{}(cost) -> int(cost).'.format(net, src, nxt)
-                                        print newRule
+                                        print (newRule)
                                         ospf_reduced.write(newRule + '\n')
                                     else:
                                         for next2 in ospf_costs[net][nxt].keys():
                                             newRule = 'OSPFRoute_{}_{}_{}(cost) <- SetOSPFEdgeCost(src, nxt, cost1), src="INTERFACE:{}", nxt="INTERFACE:{}", cost = cost1 + {}.'.format(
                                                 net, src, nxt, src_iface, nxt_iface, ospf_costs[net][nxt][next2])
-                                            print newRule
+                                            print (newRule)
                                             ospf_reduced.write(newRule + '\n')
                                             newRule = 'OSPFRoute_{}_{}_{}(cost) -> int(cost).'.format(net, src, nxt)
-                                            print newRule
+                                            print (newRule)
                                             ospf_reduced.write(newRule + '\n')
 
                 ospf_reduced.flush()
                 with open(ospf_reduced.name) as f:
-                    print "X" * 100
-                    print f.read()
-                    print "X" * 100
+                    print ("X" * 100)
+                    print (f.read())
+                    print ("X" * 100)
                 newTranslator = Translator(ospf_reduced.name, self.unrolling_limit)
                 newTranslator.STRING_TO_NODE = self.name_to_node
                 newTranslator.STRING_TO_NET = self.name_to_network
@@ -379,14 +379,14 @@ class Synthesizer(object):
                     nxt = fix_output[2]
                     cost = fix_output[3]
                     c = newTranslator.predicates['OSPFRoute_{}_{}_{}'.format(net, src, nxt)](cost) == True
-                    print c
+                    print (c)
                     self.boxes[box_name]['solver'].append(c)
                     t = z3.Const('cost', z3.IntSort())
                     c = z3.ForAll(
                         [t],
                         newTranslator.predicates[
                             'OSPFRoute_{}_{}_{}'.format(net, src, nxt)](t) == (t == cost))
-                    print c
+                    print (c)
                     self.boxes[box_name]['solver'].append(c)
 
                 for c in self.boxes[box_name]['input_constraints']:
@@ -401,9 +401,9 @@ class Synthesizer(object):
 
             solver = self.boxes[box_name]['solver']
             solver.push()
-            print "#" * 30
-            print "Synthesizing for box", box_index, box_name
-            print "Feeding desired outputs for %s..." % box_name
+            print ("#" * 30)
+            print ("Synthesizing for box", box_index, box_name)
+            print ("Feeding desired outputs for %s..." % box_name)
             # Generate custom constraints for aggregation in min
             '''
             if box_name in ['ospf01']:
@@ -414,7 +414,7 @@ class Synthesizer(object):
                     self.boxes[box_name]['outputs']['OSPFRoute'], vals)
                 solver.append(c)
             '''
-            for func_name, func in self.boxes[box_name]['outputs'].iteritems():
+            for func_name, func in self.boxes[box_name]['outputs'].items():
                 # Pre compute IGPRouteCost of OSPF
                 if func_name == 'MinIGPBGPRoute' and 'BestOSPFRoute' in yes_func_vals and 'IGPRouteCost' in self.boxes[box_name]['inputs']:
                     IGPRouteCost = self.boxes[box_name]['inputs']['IGPRouteCost']
@@ -426,10 +426,10 @@ class Synthesizer(object):
                         static = yes_func_vals['SetStaticRoute']
                         for v in static:
                             if str(v[-1]) != 'True': continue
-                            print "Added static", v
+                            print ("Added static", v)
                             #valid_igp.append(v + [1])
 
-                    print "Synthesized IGPRouteCost", [(p[0], p[1], p[2], p[3]) for p in valid_igp]
+                    print ("Synthesized IGPRouteCost", [(p[0], p[1], p[2], p[3]) for p in valid_igp])
 
                     #v1, v2, v3 = z3.Consts('v1 v2 v3', self.vertex)
                     net1 = z3.Const('Net1', self.network_sort)
@@ -455,14 +455,14 @@ class Synthesizer(object):
                         yes_func_vals[orig_name],
                         self.boxes[box_name]['outputs'],
                         return_else=return_else)
-                    print "\tFeeding desired output", box_name, fed_output
+                    print ("\tFeeding desired output", box_name, fed_output)
                     #print fed_output
                     solver.append(fed_output)
             for t in no_box_vals[box_name]:
                 #print "\tFeeding NOT desired input", box_name, t
                 pass
             # Short cut inputs
-            for func_name, func in self.boxes[box_name]['inputs'].iteritems():
+            for func_name, func in self.boxes[box_name]['inputs'].items():
                 orig_name = get_original_version(func_name)
                 return_else = True
                 if orig_name in ['BGPLocalPref', 'OSPFRoute', 'BGPRoute', 'nonMinOSPFRouteCost', 'nonMaxBGPLocalPref']:
@@ -473,19 +473,19 @@ class Synthesizer(object):
                         yes_func_vals[orig_name],
                         self.boxes[box_name]['inputs'],
                         return_else=return_else)
-                    print "\tFeeding shortcut INPUT", box_name, fed_output
+                    print ("\tFeeding shortcut INPUT", box_name, fed_output)
                     solver.append(fed_output)
             solver.append(no_box_vals[box_name])
-            print "Checking SAT for box %s ..." % box_name
+            print ("Checking SAT for box %s ..." % box_name)
             #smt2_dump = open('last.smt2', 'w')
             #smt2_dump.write(solver.to_smt2())
             #smt2_dump.close()
             #print solver.to_smt2()
             if solver.check() == z3.sat:
                 box_tries_count[box_name] = 1
-                print 'SAT, reading inputs...'
+                print ('SAT, reading inputs...')
                 model = solver.model()
-                for name, func in self.boxes[box_name]['inputs'].iteritems():
+                for name, func in self.boxes[box_name]['inputs'].items():
                     #if name == 'BGPRoute': continue
                     vals = self._get_function_vals(func, model)
                     if len(vals) == 0:
@@ -493,10 +493,10 @@ class Synthesizer(object):
                     #else:
                     #    vals.append('False')
                     yes_func_vals[name] = vals
-                    print "\tSynthesized input", name, vals
+                    print ("\tSynthesized input", name, vals)
                 box_index -= 1
                 if box_index < 0:
-                    print "Done!!!"
+                    print ("Done!!!")
                     break
                 #return
             else:
@@ -507,18 +507,18 @@ class Synthesizer(object):
                 #    self.print_box_results(self.boxes_names[box_index + 1])
                 #return
                 if box_index == len(self.boxes_names) - 1:
-                    print solver.to_smt2()
-                    print "FAILED!!!"
+                    print (solver.to_smt2())
+                    print ("FAILED!!!")
                     return
                 solver.pop()
                 box_index += 1
                 #box_index = len(self.boxes_names) - 1
                 #box_index = len(self.boxes_names) - 1
                 box_name = self.boxes_names[box_index]
-                print "!" * 20
-                print "UNSAT going back to", box_index, box_name
+                print ("!" * 20)
+                print ("UNSAT going back to", box_index, box_name)
                 no_vals = []
-                for func_name, func in self.boxes[box_name]['inputs'].iteritems():
+                for func_name, func in self.boxes[box_name]['inputs'].items():
                     orig_name = get_original_version(func_name)
                     if orig_name not in yes_func_vals:
                         continue
@@ -535,14 +535,14 @@ class Synthesizer(object):
                 no_box_vals[box_name].append(z3.Not(z3.And(*no_vals)))
         #for box_name in self.boxes_names:
         #    print self.boxes[box_name]['solver'].model()
-        print "$"*40
-        print "Final results..."
+        print ("$"*40)
+        print ("Final results...")
         for box_name in self.boxes_names:
             if box_name == 'OSPF_FIXED':
-                print "For box", box_name
+                print ("For box", box_name)
                 syn = self.boxes['OSPF_FIXED']['ospf_fixed']
                 for out in syn.get_output_configs():
-                    print "\t", out
+                    print ("\t", out)
             else:
                 self.print_box_results(box_name)
                 #print self.boxes[box_name]['solver'].to_smt2()
@@ -569,7 +569,7 @@ class Synthesizer(object):
                                                 z3.BoolSort())
         constraints = []
         # Mark externally learned networks
-        for name, net in self.name_to_network.iteritems():
+        for name, net in self.name_to_network.items():
             if name in self.announced_network_names:
                 constraints.append(is_announced_network(net) == True)
             else:
@@ -620,7 +620,7 @@ class Synthesizer(object):
                     z3.Implies(
                         z3.Or(
                             [z3.And(string_var == p, int_var == l) for
-                             p, l in self.as_paths_length.iteritems()]),
+                             p, l in self.as_paths_length.items()]),
                         is_as_path_length(string_var, int_var) == True)))
             constraints.append(
                 z3.ForAll(
@@ -628,7 +628,7 @@ class Synthesizer(object):
                     z3.Implies(
                         z3.And(
                             [z3.Not(z3.And(string_var == p, int_var == l))
-                             for p, l in self.as_paths_length.iteritems()]),
+                             for p, l in self.as_paths_length.items()]),
                         is_as_path_length(string_var, int_var) == False)))
         else:
             constraints.append(
@@ -660,8 +660,8 @@ class Synthesizer(object):
         if self._tmp_connected_networks:
             return self._tmp_connected_networks
         constraints = []
-        for src_name, src in self.name_to_node.iteritems():
-            for dst_name, dst in self.name_to_network.iteritems():
+        for src_name, src in self.name_to_node.items():
+            for dst_name, dst in self.name_to_network.items():
                 if (src_name, dst_name) in self.connected_networks:
                     constraints.append(self.connected_networks_f(src, dst) == True)
                 else:
@@ -690,8 +690,8 @@ class Synthesizer(object):
                         if link in self.connected_nodes:
                             direct_nodes.append((sname, dname))
         direct_nodes = list(set(direct_nodes))
-        for sname, svar in self.name_to_node.iteritems():
-            for dname, dvar in self.name_to_node.iteritems():
+        for sname, svar in self.name_to_node.items():
+            for dname, dvar in self.name_to_node.items():
                 if (sname, dname) in direct_nodes:
                     constraints.append(
                         self.directly_connected_nodes(svar, dvar) == True)
@@ -1733,11 +1733,11 @@ class Synthesizer(object):
         #                z3.And(IncomingFwdInterface(v4, v5, v6), v4 == v1, v6 == v2, v4 != v3))))
         #    #constraints.append(c)
 
-        for name, func in self.boxes[box_name]['inputs'].iteritems():
+        for name, func in self.boxes[box_name]['inputs'].items():
             func_const = self.generate_function_constraints(func)
             #if name in ['MinAsPathBGPRoute']: continue
             constraints.append(func_const)
-        for name, func in self.boxes[box_name]['outputs'].iteritems():
+        for name, func in self.boxes[box_name]['outputs'].items():
             func_const = self.generate_function_constraints(func)
             #print "OUTPUT", name, func_const
             #if name in ['OutgoingFwdInterface',
@@ -1973,7 +1973,7 @@ class Synthesizer(object):
         self.init_inputs = parse_inputs(inputs)
 
     def gen_configs(self, outdir):
-        print "Generating router configs"
+        print ("Generating router configs")
         g = nx.DiGraph()
         is_network = lambda g, node: g.node[node][VERTEX_TYPE] == NETWORK_TYPE
         is_router = lambda g, node: g.node[node][VERTEX_TYPE] == NODE_TYPE
@@ -2058,7 +2058,7 @@ class Synthesizer(object):
                     g[srouter][drouter]['ospf_cost'] = cost
 
         peering_nets = list(set(peering_nets))
-        print "PEERINT NETS", peering_nets
+        print ("PEERINT NETS", peering_nets)
         addrmap = {'GOOGLE': u'8.8.0.0/16'}
         for i, net in enumerate(peering_nets):
             if g.has_node(net): g.remove_node(net)

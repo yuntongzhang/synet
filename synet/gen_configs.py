@@ -4,11 +4,11 @@ import shutil
 import os
 
 
-from common import NODE_TYPE, NETWORK_TYPE, VERTEX_TYPE, PEER_TYPE
-from common import ORIGIN_TYPE, EDGE_TYPE, ANNOUNCEMENT_EDGE
+from .common import NODE_TYPE, NETWORK_TYPE, VERTEX_TYPE, PEER_TYPE
+from .common import ORIGIN_TYPE, EDGE_TYPE, ANNOUNCEMENT_EDGE
 
 #from ibgp_tags import *
-from graph_util import *
+from .graph_util import *
 
 
 def IP2Int(ip):
@@ -66,7 +66,7 @@ class ConfigBGPNodes(object):
                 add_bgp_neighbor(self.g, node, c.Router)
                 self.g.add_edge(node, c.Router, addr=a1, net=net, **{EDGE_TYPE: ANNOUNCEMENT_EDGE})
                 self.g.add_edge(c.Router, node, addr=a2, net=net, **{EDGE_TYPE: ANNOUNCEMENT_EDGE})
-                print "Adding input filter", c.Router, node
+                print ("Adding input filter", c.Router, node)
                 #add_input_filter(self.g, c.Router, node, access='permit', match=None,
                 #                 action='set local-preference 200')
 
