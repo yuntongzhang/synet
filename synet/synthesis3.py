@@ -237,6 +237,8 @@ class Synthesizer(object):
         vals = []
         if model[func] is None:
             return vals
+        if func in model:
+            return vals
         if str(func) in ['True', 'False']:
             vals.append(str(func))
             return vals
@@ -254,7 +256,7 @@ class Synthesizer(object):
     def print_box_results(self, box_name):
         print ("For box", box_name)
         model = self.boxes[box_name]['solver'].model()
-        for name, func in self.boxes[box_name]['inputs'].iteritems():
+        for name, func in self.boxes[box_name]['inputs'].items():
             vals = self._get_function_vals(func, model)
             filterd_val = [val[:-1] if z3.is_expr(val[-1]) else val for val in
                            vals]
@@ -272,7 +274,7 @@ class Synthesizer(object):
                     if src not in self.static_routes:
                         self.static_routes[src] = []
                     self.static_routes[src].append((net, src, dst))
-        for name, func in self.boxes[box_name]['outputs'].iteritems():
+        for name, func in self.boxes[box_name]['outputs'].items():
             vals = self._get_function_vals(func, model)
             filterd_val = [val[:-1] for val in vals if z3.is_true(val[-1])]
             print ("\tSynthesized output", name, filterd_val)
